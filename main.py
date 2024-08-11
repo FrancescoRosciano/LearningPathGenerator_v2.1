@@ -34,7 +34,7 @@ BE_class = BackEnd_class(client, tf_api_key, airtable_key)
 EmailSender = EM_class()
 
 def process_subtopic(subtopic, client, record_unsentModules, OpenAI_class, BE_class, YouTubeSearch, i):
-    info, video_link, video_title, video_description, video_transcript = YouTubeSearch.find_best_matching_video()
+    video_link, video_title, video_description, video_transcript = YouTubeSearch.find_best_matching_video()
     structured_description = YouTubeSearch.generate_description(video_transcript, video_description)
 
     ## generating quiz
