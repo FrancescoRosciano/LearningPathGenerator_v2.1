@@ -1,5 +1,5 @@
 import re
-from youtubesearchpython import VideosSearch,  Video, Transcript
+from youtubesearchpython import VideosSearch, Video, Transcript, ResultMode
 
 class YT_class:
     def __init__(self, client, subtopic, record_unsentModules):
@@ -50,7 +50,7 @@ class YT_class:
             print(f"\nVIDEO\n{video}\n\n")
             video_id=video['id']
 
-            matching_videos.append((video_id, matching_score, total_seconds, view_count))
+            matching_videos.append((video_id, matching_score, total_seconds, view_count, video['link'], video['title']))
 
         # select the 5 videos with the highest view count
         matching_videos.sort(key=lambda x: -x[3])
@@ -69,17 +69,14 @@ class YT_class:
             return self.find_best_matching_video()
         
         try:
-            info = Video.getInfo(video_id)
-            print(f"Video info retrieved: {info is not None}")
-            
-            video_link = info.get("link")
-            video_title = info.get("title")
-            video_description = info.get("description", video_title)
-            
-            print(f"Video link: {video_link}")
-            print(f"Video title: {video_title}")
-            print(f"Video description: {video_description[:100]}...")  # Print first 100 chars
-            
+            video_link = top_videos[0][4]
+            video_title = top_videos[0][5]
+            video = Video.get(video_link, mode=ResultMode.dict)
+            info = video.result()
+            video_description = info.get('description', '')
+            if not video_description:
+                print("Video description not found. Using title as fallback.")
+                video_description = video_title
             try:
                 transcript = Transcript.get(video_link)
             except Exception as e:
@@ -90,8 +87,14 @@ class YT_class:
             return info, video_link, video_title, video_description, transcript
         except Exception as e:
             print(f"Error in Video.getInfo: {str(e)}")
-            # You might want to implement a retry mechanism or fallback here
-            raise
+            video_description = video_title
+            try:
+                transcript = Transcript.get(video_link)
+            except Exception as e:
+                print(f"Error getting transcript: {str(e)}")
+                transcript = video_description
+        
+        return info, video_link, video_title, video_description, transcript
 
     #-------------------- VIDEO DESCRIPTION ----------------------------------------------------
     def generate_description(self, video_transcript, video_description):
