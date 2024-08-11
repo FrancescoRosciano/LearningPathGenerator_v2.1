@@ -48,8 +48,9 @@ class YT_class:
             total_seconds = sum(x * int(t) for x, t in zip([3600, 60, 1], re.findall(r'\d+', duration)))
             print(f"Video ID: {video['id']}, Matching Score: {matching_score}, Duration: {duration}, Total Seconds: {total_seconds}, View Count: {view_count}")
             print(f"\nVIDEO\n{video}\n\n")
+            video_id=video['id']
 
-            matching_videos.append((video['id'], matching_score, total_seconds, view_count))
+            matching_videos.append((video_id, matching_score, total_seconds, view_count))
 
         # select the 5 videos with the highest view count
         matching_videos.sort(key=lambda x: -x[3])
@@ -62,23 +63,35 @@ class YT_class:
         top_videos = top_videos[:1]
         try:
             video_id = top_videos[0][0]
-        except:
+            print(f"Selected video ID: {video_id}")
+        except IndexError:
+            print("No videos found in top_videos list. Retrying...")
             return self.find_best_matching_video()
         
-        info= Video.getInfo(video_id)
-        video_link = info.get("link")
-        video_title = info.get("title")
         try:
-            video_description = info.get("description")
-        except:
-            video_description = video_title
-        try:
-            transcript = Transcript.get(video_link)
-        except:
-            transcript=video_description
+            info = Video.getInfo(video_id)
+            print(f"Video info retrieved: {info is not None}")
+            
+            video_link = info.get("link")
+            video_title = info.get("title")
+            video_description = info.get("description", video_title)
+            
+            print(f"Video link: {video_link}")
+            print(f"Video title: {video_title}")
+            print(f"Video description: {video_description[:100]}...")  # Print first 100 chars
+            
+            try:
+                transcript = Transcript.get(video_link)
+            except Exception as e:
+                print(f"Error getting transcript: {str(e)}")
+                transcript = video_description
 
-        print("------------------------- Video found. -------------------------")
-        return info, video_link, video_title, video_description, transcript
+            print("------------------------- Video found. -------------------------")
+            return info, video_link, video_title, video_description, transcript
+        except Exception as e:
+            print(f"Error in Video.getInfo: {str(e)}")
+            # You might want to implement a retry mechanism or fallback here
+            raise
 
     #-------------------- VIDEO DESCRIPTION ----------------------------------------------------
     def generate_description(self, video_transcript, video_description):
