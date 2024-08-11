@@ -68,33 +68,32 @@ class YT_class:
             print("No videos found in top_videos list. Retrying...")
             return self.find_best_matching_video()
         
-        try:
-            video_link = top_videos[0][4]
-            video_title = top_videos[0][5]
-            video = Video.get(video_link, mode=ResultMode.dict)
-            info = video.result()
-            video_description = info.get('description', '')
-            if not video_description:
-                print("Video description not found. Using title as fallback.")
-                video_description = video_title
-            try:
-                transcript = Transcript.get(video_link)
-            except Exception as e:
-                print(f"Error getting transcript: {str(e)}")
-                transcript = video_description
+        video_link = top_videos[0][4]
+        video_title = top_videos[0][5]
 
-            print("------------------------- Video found. -------------------------")
-            return info, video_link, video_title, video_description, transcript
+        try:
+            video_info = Video.getInfo(video_id=video_id)
+            video_description = video_info['description']
         except Exception as e:
-            print(f"Error in Video.getInfo: {str(e)}")
-            video_description = video_title
+            print(f"Error getting video info: {str(e)}")
             try:
-                transcript = Transcript.get(video_link)
-            except Exception as e:
-                print(f"Error getting transcript: {str(e)}")
-                transcript = video_description
-        
-        return info, video_link, video_title, video_description, transcript
+                video = Video.get(video_link)
+                video_description = video['description']      
+                if not video_description:
+                    print("Video description not found. Using title as fallback.")
+                    video_description = video_title
+            except:
+                print("Error getting video description")
+                video_description = video_title
+
+        try:
+            transcript = Transcript.get(video_link)
+        except Exception as e:
+            print(f"Error getting transcript: {str(e)}")
+            transcript = video_description
+
+        print("------------------------- Video found. -------------------------")
+        return video_link, video_title, video_description, transcript
 
     #-------------------- VIDEO DESCRIPTION ----------------------------------------------------
     def generate_description(self, video_transcript, video_description):
