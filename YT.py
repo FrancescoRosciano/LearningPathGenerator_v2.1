@@ -46,6 +46,8 @@ class YT_class:
                 pass
             duration = video['duration']
             total_seconds = sum(x * int(t) for x, t in zip([3600, 60, 1], re.findall(r'\d+', duration)))
+            print(f"Video ID: {video['id']}, Matching Score: {matching_score}, Duration: {duration}, Total Seconds: {total_seconds}, View Count: {view_count}")
+            print(f"\nVIDEO\n{video}\n\n")
 
             matching_videos.append((video['id'], matching_score, total_seconds, view_count))
 
