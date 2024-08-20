@@ -17,7 +17,6 @@ class YT_class:
             ],temperature=0.25,max_tokens=40,top_p=1,frequency_penalty=0,presence_penalty=1)
 
         generated_query = search_query_GPT.choices[0].message.content
-        print(generated_query)
         keywords=generated_query + " " + self.subtopic + " " + self.subtopic + " " + self.subtopic + " " + self.subtopic + " " + self.subtopic
 
         videosSearch = VideosSearch(generated_query, limit=15)
@@ -27,30 +26,36 @@ class YT_class:
         matching_videos = []
 
         for video in search_results['result']:
-            view_count = int(video.get('viewCount', {}).get('text', '0').replace(' views', '').replace(',', ''))
-            matching_score = 0
-            try:
-                matching_score += sum(word in video['title'].lower() for word in keywords.lower().split())
-            except:
-                print("Error in processing video title")
-                pass
-            try:
-                matching_score += sum(word in video['descriptionSnippet'][0]['text'].lower() for word in keywords.lower().split())
-            except:
-                print("Error in processing video description")
-                pass
-            try:
-                matching_score += sum(word in video.get('keywords', '').lower() for word in keywords.lower().split())
-            except:
-                print("Error in processing video keywords")
-                pass
             duration = video['duration']
-            total_seconds = sum(x * int(t) for x, t in zip([3600, 60, 1], re.findall(r'\d+', duration)))
-            print(f"Video ID: {video['id']}, Matching Score: {matching_score}, Duration: {duration}, Total Seconds: {total_seconds}, View Count: {view_count}")
-            print(f"\nVIDEO\n{video}\n\n")
-            video_id=video['id']
+            time_parts = list(map(int, re.findall(r'\d+', duration)))
+            if len(time_parts) == 3:
+                total_seconds = sum(x * t for x, t in zip([3600, 60, 1], time_parts))
+            elif len(time_parts) == 2:
+                total_seconds = sum(x * t for x, t in zip([60, 1], time_parts))
+            if total_seconds < 600:
+                view_count = int(video.get('viewCount', {}).get('text', '0').replace(' views', '').replace(',', ''))
+                matching_score = 0
+                try:
+                    matching_score += sum(word in video['title'].lower() for word in keywords.lower().split())
+                except:
+                    print("Error in processing video title")
+                    pass
+                try:
+                    matching_score += sum(word in video['descriptionSnippet'][0]['text'].lower() for word in keywords.lower().split())
+                except:
+                    print("Error in processing video description")
+                    pass
+                try:
+                    matching_score += sum(word in video.get('keywords', '').lower() for word in keywords.lower().split())
+                except:
+                    print("Error in processing video keywords")
+                    pass
+                
+                #print(f"Video ID: {video['id']}, Matching Score: {matching_score}, Duration: {duration}, Total Seconds: {total_seconds}, View Count: {view_count}")
+                #print(f"\nVIDEO\n{video}\n\n")
+                video_id=video['id']
 
-            matching_videos.append((video_id, matching_score, total_seconds, view_count, video['link'], video['title']))
+                matching_videos.append((video_id, matching_score, total_seconds, view_count, video['link'], video['title']))
 
         # select the 5 videos with the highest view count
         matching_videos.sort(key=lambda x: -x[3])
@@ -63,7 +68,7 @@ class YT_class:
         top_videos = top_videos[:1]
         try:
             video_id = top_videos[0][0]
-            print(f"Selected video ID: {video_id}")
+            #print(f"Selected video ID: {video_id}")
         except IndexError:
             print("No videos found in top_videos list. Retrying...")
             return self.find_best_matching_video()
@@ -72,13 +77,16 @@ class YT_class:
         video_title = top_videos[0][5]
 
         try:
-            video_info = Video.getInfo(video_id=video_id)
+            video_info = Video.getInfo('yYckT0jrMt4')
             video_description = video_info['description']
+            cleaned_video_description = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', video_description)
+            if cleaned_video_description and len(cleaned_video_description) < len(video_description):
+                video_description = cleaned_video_description
         except Exception as e:
             print(f"Error getting video info: {str(e)}")
             try:
-                video = Video.get(video_link)
-                video_description = video['description']      
+                video_info_link = Video.get(video_link)
+                video_description = video_info_link['description']      
                 if not video_description:
                     print("Video description not found. Using title as fallback.")
                     video_description = video_title
