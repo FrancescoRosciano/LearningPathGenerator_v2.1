@@ -71,6 +71,7 @@ def process_record(record_unsentModules, client, model, BE_class, EmailSender):
     BE_class.update_airtable_email_status(record_unsentModules_dict['response_id'], workspace_id)
 
 async def main_loop():
+    cycle_number = 0
     while True:
         BE_class.fetch_typeform_df()
         BE_class.fetch_airtable_df()
@@ -85,9 +86,9 @@ async def main_loop():
         # Run the asynchronous update_airtable_students_records function
         await BE_class.update_airtable_students_records()
 
-        print("Waiting for 3 minutes before the next check...")
-        for i in progressbar(range(180)):
-            await asyncio.sleep(1)
+        cycle_number += 1
+        print(f"Cycle {cycle_number}: Waiting for 3 minutes before the next check...")
+        await asyncio.sleep(180)
 
 if __name__ == "__main__":
     asyncio.run(main_loop())
