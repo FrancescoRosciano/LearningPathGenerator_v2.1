@@ -80,7 +80,7 @@ class BackEnd_class:
             self.df_TeachersRecords=df_TeachersRecords
             return df_TeachersRecords
         else:
-            print(response.text) 
+            print(f"ERROR TO RETRIEVE INFO FROM AIRTABLE:\n{response.text}")
 
     def generate_dalle_image(self,subject):
         response = self.client.images.generate(
